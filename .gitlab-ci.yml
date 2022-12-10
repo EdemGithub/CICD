@@ -1,0 +1,71 @@
+stages:
+  - build
+  - style
+  - tests
+  - deploy
+  - tg
+
+Build:
+  image: gcc:latest
+  stage: build
+  tags:
+  - s21
+  script:
+    - cd src/cat/
+    - make all
+    - cd ../grep
+    - make all
+  artifacts:
+      paths:
+        - src/cat/s21_cat
+        - src/grep/s21_grep
+      expire_in: 30 days
+
+Style:
+  stage: style
+  tags:
+    - s21
+  needs:
+    - Build
+  script:
+    - cd src/cat/
+    - make check
+    - cd ../grep/
+    - make check
+
+Tests:
+  stage: tests
+  tags:
+    - s21
+  needs:
+    - Style
+  script:
+    - cd src/cat/
+    - make test
+    - cd ../grep/
+    - make test
+  after_script:
+    - echo "$CI_JOB_STATUS" > status
+  artifacts:
+    paths:
+      - status
+    expire_in: 1 days
+
+Deploy:
+  stage: deploy
+  tags:
+    - s21
+  script:
+    - chmod +x deploy.sh
+    - ls -l src/cat/*
+    - ./deploy.sh
+
+Telegram:
+  stage: tg
+  tags:
+    - s21
+  needs:
+    - Tests
+  script:
+    - chmod +x telegramm.sh
+    - ./telegramm.sh
